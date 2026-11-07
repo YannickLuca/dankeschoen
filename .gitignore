@@ -1,0 +1,12 @@
+# Privat – darf nie ins öffentliche Repo
+src/
+privat/
+.env
+.env.*
+ANLEITUNG.md
+
+# Abhängigkeiten und Systemdateien
+node_modules/
+Thumbs.db
+desktop.ini
+.DS_Store

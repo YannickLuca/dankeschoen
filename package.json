@@ -1,0 +1,24 @@
+{
+  "name": "dankeschoen",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Passwortgeschützte Dankes-Seite (StatiCrypt) für GitHub Pages",
+  "type": "module",
+  "scripts": {
+    "passwort": "node scripts/passwort.mjs",
+    "build": "node scripts/build.mjs",
+    "vorschau": "node scripts/build.mjs --vorschau",
+    "test": "node scripts/test.mjs",
+    "test:lokal": "node scripts/test.mjs --lokal",
+    "veroeffentlichen": "node scripts/veroeffentlichen.mjs",
+    "notfall": "node scripts/notfall.mjs"
+  },
+  "devDependencies": {
+    "@fontsource-variable/jost": "^5.3.0",
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "heic-convert": "^2.1.0",
+    "playwright-core": "^1.65.0",
+    "sharp": "^0.35.5",
+    "staticrypt": "^3.5.4"
+  }
+}

@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<title>Dankeschön · Luana &amp; Yannick</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="Unsere Dankes-Seite für alle Hochzeitsgäste.">
+<meta property="og:title" content="Dankeschön · Luana &amp; Yannick">
+<meta property="og:description" content="Unsere Dankes-Seite für alle Hochzeitsgäste.">
+<meta name="theme-color" content="#FCF9F4">
+<meta http-equiv="cache-control" content="max-age=0">
+<meta http-equiv="cache-control" content="no-cache">
+<meta http-equiv="expires" content="0">
+<meta http-equiv="pragma" content="no-cache">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%239E5868' d='M16 28S5 21.4 5 13.8C5 9.6 8 7 11.2 7c2.1 0 3.8 1.1 4.8 2.8C17 8.1 18.7 7 20.8 7 24 7 27 9.6 27 13.8 27 21.4 16 28 16 28z'/%3E%3C/svg%3E">
+<style>
+/* SCHRIFTEN */
+:root {
+    --elfenbein: #FCF9F4;
+    --text: #3E3440;
+    --text-leise: #6B5F6C;
+    --akzent: #9E5868;
+    --akzent-dunkel: #874A59;
+    --rose: #F2CDD3;
+    --pfirsich: #F7D6BF;
+    --salbei: #CFE3D2;
+    --himmel: #CCDFF0;
+    --flieder: #DED2EF;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+    margin: 0;
+    background: var(--elfenbein);
+    color: var(--text);
+    font: 400 1rem/1.6 "Jost", system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+}
+.aquarell {
+    position: fixed;
+    inset: -25%;
+    z-index: -1;
+    filter: blur(24px);
+    background:
+        radial-gradient(40% 32% at 20% 22%, var(--rose), transparent 72%),
+        radial-gradient(36% 30% at 82% 16%, var(--himmel), transparent 72%),
+        radial-gradient(42% 34% at 80% 74%, var(--salbei), transparent 72%),
+        radial-gradient(38% 32% at 18% 80%, var(--pfirsich), transparent 72%),
+        radial-gradient(32% 28% at 52% 50%, var(--flieder), transparent 74%);
+}
+.hidden { display: none !important; }
+.lade { min-height: 100%; display: grid; place-items: center; text-align: center; padding: 1rem; }
+.spinner {
+    width: 2.25rem;
+    height: 2.25rem;
+    margin: 0 auto;
+    border-radius: 50%;
+    border: 2px solid var(--rose);
+    border-top-color: var(--akzent);
+    animation: drehen 0.9s linear infinite;
+}
+@keyframes drehen { to { transform: rotate(360deg); } }
+main {
+    min-height: 100%;
+    display: grid;
+    place-items: center;
+    padding: max(1.5rem, env(safe-area-inset-top)) 1rem max(1.5rem, env(safe-area-inset-bottom));
+}
+.karte {
+    width: 100%;
+    max-width: 24rem;
+    padding: 2.5rem 1.5rem 2rem;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.72);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 28px;
+    box-shadow: 0 20px 50px -20px rgba(62, 52, 64, 0.25);
+}
+h1 {
+    margin: 0;
+    font: 500 clamp(2.75rem, 13vw, 3.5rem)/1 "Cormorant Garamond", Georgia, serif;
+    letter-spacing: 0.01em;
+}
+.namen {
+    margin: 0.5rem 0 0;
+    font: italic 500 1.65rem/1.2 "Cormorant Garamond", Georgia, serif;
+    color: var(--akzent);
+}
+.zier { display: block; width: 7rem; height: auto; margin: 1.1rem auto 1.2rem; color: var(--akzent); opacity: 0.7; }
+.hinweis { margin: 0 0 1.5rem; color: var(--text-leise); text-wrap: balance; }
+.feld { position: relative; }
+#staticrypt-password {
+    width: 100%;
+    padding: 0.9rem 3.25rem 0.9rem 1rem;
+    font: inherit;
+    font-size: 1.0625rem;
+    color: var(--text);
+    background: #fff;
+    border: 1px solid #E3D6D9;
+    border-radius: 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+#staticrypt-password:focus { border-color: var(--akzent); box-shadow: 0 0 0 4px rgba(158, 88, 104, 0.15); }
+.auge {
+    position: absolute;
+    top: 50%;
+    right: 0.35rem;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    color: var(--text-leise);
+    background: none;
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
+}
+.auge:focus-visible { outline: 2px solid var(--akzent); }
+.auge svg { width: 1.35rem; height: 1.35rem; }
+.fehler { margin: 0.75rem 0 0; color: #8E3B4C; font-size: 0.95rem; text-wrap: balance; }
+.merken {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    margin: 1rem 0 1.25rem;
+    color: var(--text-leise);
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+.merken input { width: 1.15rem; height: 1.15rem; margin: 0; accent-color: var(--akzent); }
+.knopf {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    font: 500 1.0625rem/1 "Jost", system-ui, sans-serif;
+    letter-spacing: 0.03em;
+    color: #fff;
+    background: var(--akzent);
+    border: 0;
+    border-radius: 999px;
+    box-shadow: 0 10px 24px -10px rgba(158, 88, 104, 0.7);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+.knopf:hover { background: var(--akzent-dunkel); }
+.knopf:active { transform: scale(0.98); }
+.knopf:disabled { opacity: 0.75; cursor: progress; }
+.knopf:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wackeln { animation: wackeln 0.4s; }
+@keyframes wackeln { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+@media (prefers-reduced-motion: reduce) {
+    .wackeln { animation: none; }
+    .spinner { animation-duration: 2s; }
+}
+</style>
+</head>
+<body>
+<div class="aquarell" aria-hidden="true"></div>
+
+<div id="staticrypt_loading" class="lade">
+    <div>
+        <div class="spinner" role="status" aria-label="Seite wird geöffnet"></div>
+        <noscript><p class="hinweis">Bitte aktiviere JavaScript, um die Seite zu öffnen.</p></noscript>
+    </div>
+</div>
+
+<main id="staticrypt_content" class="hidden">
+    <div class="karte">
+        <h1>Dankeschön</h1>
+        <p class="namen">Luana &amp; Yannick</p>
+        <svg class="zier" viewBox="0 0 120 12" aria-hidden="true">
+            <path d="M4 6.5h42M74 6.5h42" stroke="currentColor" stroke-width="1" stroke-linecap="round" fill="none"/>
+            <path d="M60 11.5S54 7.9 54 4.1C54 2.3 55.4 1.1 57 1.1c1.3 0 2.4.8 3 2 .6-1.2 1.7-2 3-2 1.6 0 3 1.2 3 3 0 3.8-6 7.4-6 7.4z" fill="currentColor"/>
+        </svg>
+        <p class="hinweis">Diese Seite ist für unsere Hochzeitsgäste. Bitte gib das Passwort aus unserer Nachricht ein.</p>
+
+        <form id="staticrypt-form" action="#" method="post" novalidate>
+            <label for="staticrypt-password" class="sr">Passwort</label>
+            <div class="feld">
+                <input id="staticrypt-password" type="password" name="password" placeholder="Passwort"
+                    autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false">
+                <button type="button" class="auge" aria-label="Passwort anzeigen" aria-pressed="false"></button>
+            </div>
+            <p id="fehler" class="fehler" role="alert" hidden></p>
+            <label id="staticrypt-remember-label" class="merken hidden">
+                <input id="staticrypt-remember" type="checkbox" name="remember" checked>
+                Auf diesem Gerät merken
+            </label>
+            <button type="submit" class="knopf">Öffnen</button>
+        </form>
+    </div>
+</main>
+
+<script>
+(function () {
+    // Von StatiCrypt beim Bauen eingesetzt
+    var staticryptInitiator = /*[|js_staticrypt|]*/ 0;
+    var isRememberEnabled = /*[|is_remember_enabled|]*/ 0,
+        staticryptConfig = /*[|staticrypt_config|]*/ 0;
+
+    // Eigene Schlüssel, damit sich andere Seiten auf yannickluca.github.io nicht in die Quere kommen
+    var staticrypt = staticryptInitiator.init(staticryptConfig, {
+        rememberExpirationKey: "dankeschoen_ablauf",
+        rememberPassphraseKey: "dankeschoen_schluessel",
+        replaceHtmlCallback: null,
+        clearLocalStorageCallback: null,
+    });
+
+    var formular = document.getElementById("staticrypt-form"),
+        feld = document.getElementById("staticrypt-password"),
+        merken = document.getElementById("staticrypt-remember"),
+        knopf = formular.querySelector(".knopf"),
+        fehler = document.getElementById("fehler"),
+        karte = document.querySelector(".karte"),
+        auge = document.querySelector(".auge");
+
+    var AUGE_AUF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+    var AUGE_ZU = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1C11 5 11.5 5 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6C3.9 8.4 2 12 2 12s3.6 7 10 7c2 0 3.8-.6 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+    auge.innerHTML = AUGE_AUF;
+
+    // StatiCrypt 3.5 liefert bei Gäste-Links ein verschachteltes Ergebnis – beides abfangen
+    function istErfolg(ergebnis) {
+        var wert = ergebnis && ergebnis.isSuccessful;
+        return wert === true || (!!wert && wert.isSuccessful === true);
+    }
+
+    // Gross-/Kleinschreibung, Leerzeichen statt Bindestrich und ß verzeihen
+    function normalisieren(wert) {
+        return wert
+            .normalize("NFKC")
+            .trim()
+            .toLowerCase()
+            .replace(/ß/g, "ss")
+            .replace(/[\s‐-―−_.,;:\/+]+/g, "-")
+            .replace(/-{2,}/g, "-")
+            .replace(/^-+|-+$/g, "");
+    }
+
+    function hatSchluesselImLink() {
+        return (location.hash + location.search).indexOf("staticrypt_pwd") !== -1;
+    }
+
+    async function automatischOeffnen() {
+        try {
+            return istErfolg(await staticrypt.handleDecryptOnLoad());
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function formularZeigen(meldung) {
+        document.getElementById("staticrypt_loading").classList.add("hidden");
+        document.getElementById("staticrypt_content").classList.remove("hidden");
+        if (isRememberEnabled) document.getElementById("staticrypt-remember-label").classList.remove("hidden");
+        if (meldung) {
+            fehler.textContent = meldung;
+            fehler.hidden = false;
+        }
+        feld.focus();
+    }
+
+    window.onload = async function () {
+        if (await automatischOeffnen()) return;
+
+        // Ungültiger oder veralteter Gäste-Link: aus der Adresse entfernen, gespeicherten Login versuchen
+        if (hatSchluesselImLink()) {
+            history.replaceState(null, "", location.pathname);
+            if (await automatischOeffnen()) return;
+            formularZeigen("Dieser Link ist nicht mehr gültig. Bitte nimm den Link aus unserer neusten Nachricht oder gib das Passwort ein.");
+            return;
+        }
+        formularZeigen();
+    };
+
+    auge.addEventListener("click", function () {
+        var zeigen = feld.type === "password";
+        feld.type = zeigen ? "text" : "password";
+        auge.innerHTML = zeigen ? AUGE_ZU : AUGE_AUF;
+        auge.setAttribute("aria-label", zeigen ? "Passwort verbergen" : "Passwort anzeigen");
+        auge.setAttribute("aria-pressed", String(zeigen));
+        feld.focus();
+    });
+
+    formular.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        var passwort = normalisieren(feld.value);
+        if (!passwort) {
+            feld.focus();
+            return;
+        }
+
+        knopf.disabled = true;
+        knopf.textContent = "Einen Moment …";
+        fehler.hidden = true;
+
+        var ok = false;
+        try {
+            ok = istErfolg(await staticrypt.handleDecryptionOfPage(passwort, merken.checked));
+        } catch (err) {
+            ok = false;
+        }
+        if (ok) return;
+
+        knopf.disabled = false;
+        knopf.textContent = "Öffnen";
+        fehler.textContent = "Das Passwort stimmt leider nicht. Bitte versuch es nochmals.";
+        fehler.hidden = false;
+        karte.classList.remove("wackeln");
+        void karte.offsetWidth;
+        karte.classList.add("wackeln");
+        feld.select();
+    });
+})();
+</script>
+</body>
+</html>
