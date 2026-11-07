@@ -2,19 +2,20 @@
 //   1. Fotos aus src/fotos/<abschnitt>/ verkleinern (max. 1600 px), Metadaten (EXIF/GPS) entfernen, als Base64 einbetten
 //   2. Schriften einbetten
 //   3. mit StatiCrypt und eigenem Template verschlüsseln → ./index.html
-//   4. prüfen (verschlüsselt, Gegenprobe, Grösse) und privat/ aktualisieren (Share-Link, Texte, Kalender)
+//   4. prüfen (verschlüsselt, Gegenprobe, Grösse) und privat/ aktualisieren (über src/privat.mjs)
+// Alles Persönliche (Text, Fotos, Gäste-Texte) liegt in src/ und kommt nie ins Repo.
 // Mit --vorschau öffnet sich danach die unverschlüsselte Vorschau im Browser.
 import { execFileSync, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import sharp from "sharp";
 import { liesPasswort } from "./passwort.mjs";
-import { privatAktualisieren } from "./privat.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const QUELLE = path.join(ROOT, "src", "index.html");
+const PRIVAT_MODUL = path.join(ROOT, "src", "privat.mjs");
 const FOTO_ORDNER = process.env.FOTOS_DIR ? path.resolve(process.env.FOTOS_DIR) : path.join(ROOT, "src", "fotos");
 const BUILD = path.join(ROOT, "src", ".build");
 const BUILD_SEITE = path.join(BUILD, "index.html");
@@ -27,7 +28,6 @@ const STATICRYPT_CLI = path.join(ROOT, "node_modules", "staticrypt", "cli", "ind
 export const SEITEN_URL = "https://yannickluca.github.io/dankeschoen/";
 const MAX_BYTES = 6_000_000;
 const KLARTEXT_MARKER = "dankeschoen:klartext";
-const ABSCHNITTE = { ziviltrauung: "Ziviltrauung", colmegna: "Hochzeitsfest in Colmegna" };
 const BILD_ENDUNG = /\.(jpe?g|png|webp|avif|tiff?|heic|heif)$/i;
 // Falls die Seite zu gross würde, wird Stufe für Stufe stärker komprimiert
 const STUFEN = [
@@ -76,6 +76,16 @@ function schriftenCss(liste) {
             return `@font-face{font-family:"${familie}";font-style:${stil};font-weight:${gewicht};font-display:swap;src:url(data:font/woff2;base64,${base64}) format("woff2")}`;
         })
         .join("\n");
+}
+
+// Fotoabschnitte ergeben sich aus den Platzhaltern <!-- FOTOS:name --> in src/index.html (Fotos in src/fotos/name/),
+// der Titel für neutrale Alt-Texte aus der Überschrift des Abschnitts
+function abschnitte(quelle) {
+    return [...quelle.matchAll(/<!-- FOTOS:([\w-]+) -->/g)].map(([, name]) => {
+        const h2 = quelle.match(new RegExp(`id="${name}"[\\s\\S]*?<h2[^>]*>([\\s\\S]*?)</h2>`));
+        const titel = h2 ? h2[1].replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").trim() : name;
+        return [name, titel];
+    });
 }
 
 function fotosIn(abschnitt) {
@@ -140,16 +150,14 @@ function galerieHtml(abschnitt, fotos) {
 async function seiteBauen(quelle, stufe) {
     let seite = quelle.replace("/* SCHRIFTEN */", () => schriftenCss(SCHRIFTEN.seite));
     const statistik = {};
-    for (const [abschnitt, titel] of Object.entries(ABSCHNITTE)) {
+    for (const [abschnitt, titel] of abschnitte(quelle)) {
         const dateien = fotosIn(abschnitt);
         const fotos = [];
         for (const [i, datei] of dateien.entries()) {
             fotos.push({ ...(await fotoVerarbeiten(datei, stufe)), alt: altText(datei, titel, i + 1) });
         }
         statistik[titel] = { anzahl: fotos.length, bytes: fotos.reduce((s, f) => s + f.data.length, 0) };
-        const platzhalter = `<!-- FOTOS:${abschnitt} -->`;
-        if (!seite.includes(platzhalter)) abbruch(`Platzhalter ${platzhalter} fehlt in src/index.html.`);
-        seite = seite.replace(platzhalter, () => galerieHtml(abschnitt, fotos));
+        seite = seite.replace(`<!-- FOTOS:${abschnitt} -->`, () => galerieHtml(abschnitt, fotos));
     }
     return { seite, statistik };
 }
@@ -198,13 +206,13 @@ async function main() {
     }
     writeFileSync(BUILD_SEITE, ergebnis.seite);
 
-    const shareAusgabe = staticrypt(["--share", SEITEN_URL, "--share-remember"], passwort);
-    const shareLink = (shareAusgabe.match(/https:\/\/\S+#staticrypt_pwd=[0-9a-f]+\S*/) || [])[0];
-    if (!shareLink) abbruch("Share-Link konnte nicht erzeugt werden.");
+    // Aus Passwort + Salt abgeleiteter Schlüssel – dient nur dazu, eine Passwortänderung zu erkennen
+    const schluessel = (staticrypt(["--share"], passwort).match(/staticrypt_pwd=([0-9a-f]+)/) || [])[1];
+    if (!schluessel) abbruch("Schlüssel konnte nicht abgeleitet werden.");
 
     // StatiCrypt verschlüsselt jedes Mal mit neuem Zufallswert. Nur neu verschlüsseln, wenn sich Inhalt,
-    // Passwortseite oder Passwort (→ Share-Link) geändert haben – sonst gäbe es bei jedem Build einen neuen Commit.
-    const stand = createHash("sha256").update(ergebnis.seite).update(template).update(shareLink).digest("hex");
+    // Passwortseite oder Passwort geändert haben – sonst gäbe es bei jedem Build einen neuen Commit.
+    const stand = createHash("sha256").update(ergebnis.seite).update(template).update(schluessel).digest("hex");
     const verschluesseln = () =>
         staticrypt([path.relative(ROOT, BUILD_SEITE), "-d", ".", "-t", path.relative(ROOT, BUILD_TEMPLATE), "--remember", "0"], passwort);
 
@@ -254,9 +262,12 @@ async function main() {
     for (const [ok, text] of pruefungen) console.log(`  ${ok ? "✓" : "✗"} ${text}`);
     if (pruefungen.some(([ok]) => !ok)) abbruch("Build nicht in Ordnung – index.html bitte nicht committen.");
 
-    const privat = privatAktualisieren(ROOT, shareLink);
-    console.log(`  ✓ privat/ aktualisiert${privat.geschrieben.length ? ` (neu: ${privat.geschrieben.join(", ")})` : ""}`);
-    if (privat.linkNeu && privat.ersetzt) console.log("  ! Der Share-Link hat sich geändert – die Texte in privat/ wurden neu geschrieben.");
+    if (existsSync(PRIVAT_MODUL)) {
+        const { privatAktualisieren } = await import(pathToFileURL(PRIVAT_MODUL).href);
+        const privat = privatAktualisieren(ROOT, { url: SEITEN_URL, passwort });
+        console.log(`  ✓ privat/ aktualisiert${privat.geschrieben.length ? ` (neu: ${privat.geschrieben.join(", ")})` : ""}`);
+        if (privat.ersetzt) console.log("  ! Das Passwort hat sich geändert – die Texte in privat/ wurden neu geschrieben.");
+    }
     console.log("\n  Vorschau (unverschlüsselt): src/.build/index.html\n");
 
     if (process.argv.includes("--vorschau")) vorschauOeffnen(BUILD_SEITE);
