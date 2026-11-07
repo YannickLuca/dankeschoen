@@ -5,6 +5,7 @@
 //   4. prüfen (verschlüsselt, Gegenprobe, Grösse) und privat/ aktualisieren (Share-Link, Texte, Kalender)
 // Mit --vorschau öffnet sich danach die unverschlüsselte Vorschau im Browser.
 import { execFileSync, spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,6 +19,7 @@ const FOTO_ORDNER = process.env.FOTOS_DIR ? path.resolve(process.env.FOTOS_DIR) 
 const BUILD = path.join(ROOT, "src", ".build");
 const BUILD_SEITE = path.join(BUILD, "index.html");
 const BUILD_TEMPLATE = path.join(BUILD, "passwort.html");
+const BUILD_STAND = path.join(BUILD, "stand.txt");
 const ZIEL = path.join(ROOT, "index.html");
 const TEMPLATE = path.join(ROOT, "templates", "passwort.html");
 const STATICRYPT_CLI = path.join(ROOT, "node_modules", "staticrypt", "cli", "index.js");
@@ -196,7 +198,39 @@ async function main() {
     }
     writeFileSync(BUILD_SEITE, ergebnis.seite);
 
-    staticrypt([path.relative(ROOT, BUILD_SEITE), "-d", ".", "-t", path.relative(ROOT, BUILD_TEMPLATE), "--remember", "0"], passwort);
+    const shareAusgabe = staticrypt(["--share", SEITEN_URL, "--share-remember"], passwort);
+    const shareLink = (shareAusgabe.match(/https:\/\/\S+#staticrypt_pwd=[0-9a-f]+\S*/) || [])[0];
+    if (!shareLink) abbruch("Share-Link konnte nicht erzeugt werden.");
+
+    // StatiCrypt verschlüsselt jedes Mal mit neuem Zufallswert. Nur neu verschlüsseln, wenn sich Inhalt,
+    // Passwortseite oder Passwort (→ Share-Link) geändert haben – sonst gäbe es bei jedem Build einen neuen Commit.
+    const stand = createHash("sha256").update(ergebnis.seite).update(template).update(shareLink).digest("hex");
+    const verschluesseln = () =>
+        staticrypt([path.relative(ROOT, BUILD_SEITE), "-d", ".", "-t", path.relative(ROOT, BUILD_TEMPLATE), "--remember", "0"], passwort);
+
+    // Gegenprobe: mit dem Passwort entschlüsseln und mit der Quelle vergleichen
+    const gegenprobe = () => {
+        const probeOrdner = path.join(BUILD, "gegenprobe");
+        rmSync(probeOrdner, { recursive: true, force: true });
+        staticrypt(["index.html", "--decrypt", "-d", path.relative(ROOT, probeOrdner)], passwort);
+        const datei = path.join(probeOrdner, "index.html");
+        const gleich = existsSync(datei) && readFileSync(datei, "utf8") === ergebnis.seite;
+        rmSync(probeOrdner, { recursive: true, force: true });
+        return gleich;
+    };
+
+    let neuVerschluesselt = false;
+    if (!existsSync(ZIEL) || !existsSync(BUILD_STAND) || readFileSync(BUILD_STAND, "utf8") !== stand) {
+        verschluesseln();
+        neuVerschluesselt = true;
+    }
+    let gegenprobeOk = gegenprobe();
+    if (!gegenprobeOk && !neuVerschluesselt) {
+        verschluesseln();
+        neuVerschluesselt = true;
+        gegenprobeOk = gegenprobe();
+    }
+    if (gegenprobeOk) writeFileSync(BUILD_STAND, stand);
 
     // Prüfungen am Ergebnis
     const ausgabe = readFileSync(ZIEL, "utf8");
@@ -208,28 +242,15 @@ async function main() {
         [!ausgabe.includes("data:image/webp"), "Fotos nur verschlüsselt"],
         [/<meta name="robots" content="noindex/.test(ausgabe), "Passwortseite mit noindex"],
         [groesse <= MAX_BYTES, `Grösse ${mb(groesse)} (Ziel: unter ${mb(MAX_BYTES)})`],
+        [gegenprobeOk, "Gegenprobe: Entschlüsseln ergibt exakt die Quelle"],
     ];
-
-    // Gegenprobe: mit dem Passwort entschlüsseln und mit der Quelle vergleichen
-    const probeOrdner = path.join(BUILD, "gegenprobe");
-    rmSync(probeOrdner, { recursive: true, force: true });
-    staticrypt(["index.html", "--decrypt", "-d", path.relative(ROOT, probeOrdner)], passwort);
-    const entschluesselt = path.join(probeOrdner, "index.html");
-    pruefungen.push([
-        existsSync(entschluesselt) && readFileSync(entschluesselt, "utf8") === ergebnis.seite,
-        "Gegenprobe: Entschlüsseln ergibt exakt die Quelle",
-    ]);
-    rmSync(probeOrdner, { recursive: true, force: true });
-
-    const shareAusgabe = staticrypt(["--share", SEITEN_URL, "--share-remember"], passwort);
-    const shareLink = (shareAusgabe.match(/https:\/\/\S+#staticrypt_pwd=[0-9a-f]+\S*/) || [])[0];
-    pruefungen.push([!!shareLink, "Share-Link erzeugt"]);
 
     console.log("");
     for (const [titel, { anzahl, bytes }] of Object.entries(ergebnis.statistik)) {
         console.log(`  ${titel}: ${anzahl} Foto${anzahl === 1 ? "" : "s"}${anzahl ? ` (${mb(bytes)})` : ""}`);
     }
-    console.log(`  Fotos: max. ${stufe.max} px, WebP-Qualität ${stufe.q}, Metadaten (EXIF/GPS) entfernt\n`);
+    console.log(`  Fotos: max. ${stufe.max} px, WebP-Qualität ${stufe.q}, Metadaten (EXIF/GPS) entfernt`);
+    console.log(`  index.html: ${neuVerschluesselt ? "neu verschlüsselt" : "unverändert (Inhalt gleich wie beim letzten Build)"}\n`);
     for (const [ok, text] of pruefungen) console.log(`  ${ok ? "✓" : "✗"} ${text}`);
     if (pruefungen.some(([ok]) => !ok)) abbruch("Build nicht in Ordnung – index.html bitte nicht committen.");
 
