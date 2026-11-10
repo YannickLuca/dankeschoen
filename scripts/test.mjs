@@ -86,6 +86,13 @@ async function main() {
         await page.click(".knopf");
         return inhaltSichtbar(page);
     }
+    // Läuft im Browser: hat das Feuerwerk etwas auf seine Leinwand gezeichnet?
+    const feuerwerkGezeichnet = () => {
+        const leinwand = document.querySelector(".feuerwerk");
+        if (!leinwand) return false;
+        const pixel = leinwand.getContext("2d").getImageData(0, 0, leinwand.width, leinwand.height).data;
+        return new Uint32Array(pixel.buffer).some(Boolean);
+    };
 
     // Handy: Passwortseite, falsches und richtiges Passwort, «Merken»
     const kontext = await neuerKontext();
@@ -123,6 +130,7 @@ async function main() {
         window.scrollTo(0, 0);
     });
     await page.screenshot({ path: bild("04-seite-ganz"), fullPage: true });
+    pruefe(!(await page.evaluate(feuerwerkGezeichnet)), "Bei «Bewegung reduzieren» bleibt das Feuerwerk aus");
 
     await page.reload();
     pruefe(await inhaltSichtbar(page), "Erneut öffnen: Seite ist ohne Passwort offen (Gerät gemerkt)");
@@ -158,6 +166,16 @@ async function main() {
     await pagePc.evaluate(() => document.fonts.ready);
     await pagePc.screenshot({ path: bild("07-computer") });
     await kontextPc.close();
+
+    // Feuerwerk im Kopf der Seite – zündet kurz nach dem Öffnen (die übrigen Tests laufen mit «Bewegung reduzieren»)
+    const kontextFw = await neuerKontext({ ...HANDY, reducedMotion: "no-preference" });
+    const pageFw = await kontextFw.newPage();
+    await anmelden(pageFw);
+    const gezuendet = await pageFw.waitForFunction(feuerwerkGezeichnet, null, { timeout: 8000, polling: 100 }).then(() => true, () => false);
+    pruefe(gezuendet, "Feuerwerk startet beim Öffnen der Seite");
+    await pageFw.waitForTimeout(1600);
+    await pageFw.screenshot({ path: bild("09-feuerwerk") });
+    await kontextFw.close();
 
     // Datumsweiche – 31.12.2026 23:59 noch Download, 1.1.2027 00:00 Hinweis
     for (const [zeit, erwartet] of [["2026-12-31T23:59:30+01:00", "aktiv"], ["2027-01-01T00:00:30+01:00", "beendet"]]) {
