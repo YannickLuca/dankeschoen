@@ -151,6 +151,18 @@ async function main() {
             pruefe((await page.locator(".lb-zaehler").innerText()) === `2 / ${anzahl}`, "Vollbild: Wischen zeigt das nächste Foto");
         }
         await page.screenshot({ path: bild("05-vollbild") });
+
+        // Im Vollbild vergrössern: zwei Finger auseinanderziehen, danach zeigt ein Tipp wieder das ganze Bild
+        const zoom = () => page.locator(".lb-bild").evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
+        const cdp = await kontext.newCDPSession(page);
+        const finger = (abstand) => [-abstand, abstand].map((dx, id) => ({ x: 195 + dx, y: 330, id }));
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: finger(30) });
+        for (const abstand of [50, 70, 90, 110, 120]) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: finger(abstand) });
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+        pruefe((await zoom()) > 2.5, "Vollbild: zwei Finger auseinanderziehen vergrössert das Foto");
+        await page.screenshot({ path: bild("05-vollbild-gezoomt") });
+        await page.touchscreen.tap(195, 330);
+        pruefe((await zoom()) === 1, "Vollbild: Antippen zeigt wieder das ganze Foto");
         await page.keyboard.press("Escape");
         pruefe(!(await page.locator(".lightbox[open]").count()), "Vollbild schliesst wieder");
     } else {

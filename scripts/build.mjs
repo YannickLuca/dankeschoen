@@ -79,12 +79,15 @@ function schriftenCss(liste) {
 }
 
 // Fotoabschnitte ergeben sich aus den Platzhaltern <!-- FOTOS:name --> in src/index.html (Fotos in src/fotos/name/),
-// der Titel für neutrale Alt-Texte aus der Überschrift des Abschnitts
+// der Titel für neutrale Alt-Texte aus der Überschrift des Abschnitts. Mit <!-- FOTOS:name:3600 --> dürfen die Fotos
+// eines Abschnitts grösser sein (längste Kante in Pixeln) – für Bilder, in die man weit hineinzoomen möchte.
 function abschnitte(quelle) {
-    return [...quelle.matchAll(/<!-- FOTOS:([\w-]+) -->/g)].map(([, name]) => {
+    return [...quelle.matchAll(/<!-- FOTOS:([\w-]+)(?::(\d+))? -->/g)].map(([platzhalter, name, max]) => {
         const h2 = quelle.match(new RegExp(`id="${name}"[\\s\\S]*?<h2[^>]*>([\\s\\S]*?)</h2>`));
-        const titel = h2 ? h2[1].replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").trim() : name;
-        return [name, titel];
+        const titel = h2
+            ? h2[1].replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").trim()
+            : name.charAt(0).toUpperCase() + name.slice(1);
+        return { name, titel, platzhalter, max: max ? Number(max) : null };
     });
 }
 
@@ -150,14 +153,16 @@ function galerieHtml(abschnitt, fotos) {
 async function seiteBauen(quelle, stufe) {
     let seite = quelle.replace("/* SCHRIFTEN */", () => schriftenCss(SCHRIFTEN.seite));
     const statistik = {};
-    for (const [abschnitt, titel] of abschnitte(quelle)) {
-        const dateien = fotosIn(abschnitt);
+    for (const { name, titel, platzhalter, max } of abschnitte(quelle)) {
+        const dateien = fotosIn(name);
         const fotos = [];
+        // Ein eigenes Höchstmass schrumpft in den stärkeren Stufen im gleichen Verhältnis mit
+        const mass = max ? { max: Math.round((max * stufe.max) / STUFEN[0].max), q: stufe.q } : stufe;
         for (const [i, datei] of dateien.entries()) {
-            fotos.push({ ...(await fotoVerarbeiten(datei, stufe)), alt: altText(datei, titel, i + 1) });
+            fotos.push({ ...(await fotoVerarbeiten(datei, mass)), alt: altText(datei, titel, i + 1) });
         }
-        statistik[titel] = { anzahl: fotos.length, bytes: fotos.reduce((s, f) => s + f.data.length, 0) };
-        seite = seite.replace(`<!-- FOTOS:${abschnitt} -->`, () => galerieHtml(abschnitt, fotos));
+        statistik[titel] = { anzahl: fotos.length, bytes: fotos.reduce((s, f) => s + f.data.length, 0), max: max && mass.max };
+        seite = seite.replace(platzhalter, () => galerieHtml(name, fotos));
     }
     return { seite, statistik };
 }
@@ -254,8 +259,9 @@ async function main() {
     ];
 
     console.log("");
-    for (const [titel, { anzahl, bytes }] of Object.entries(ergebnis.statistik)) {
-        console.log(`  ${titel}: ${anzahl} Foto${anzahl === 1 ? "" : "s"}${anzahl ? ` (${mb(bytes)})` : ""}`);
+    for (const [titel, { anzahl, bytes, max }] of Object.entries(ergebnis.statistik)) {
+        const angaben = anzahl ? ` (${mb(bytes)}${max ? `, max. ${max} px` : ""})` : "";
+        console.log(`  ${titel}: ${anzahl} Foto${anzahl === 1 ? "" : "s"}${angaben}`);
     }
     console.log(`  Fotos: max. ${stufe.max} px, WebP-Qualität ${stufe.q}, Metadaten (EXIF/GPS) entfernt`);
     console.log(`  index.html: ${neuVerschluesselt ? "neu verschlüsselt" : "unverändert (Inhalt gleich wie beim letzten Build)"}\n`);
