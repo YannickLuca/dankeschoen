@@ -86,6 +86,9 @@ async function main() {
         await page.click(".knopf");
         return inhaltSichtbar(page);
     }
+    // Wartet, bis die sofort geladenen Fotos dekodiert sind – sonst zeigt ein früher Screenshot noch eine leere Fläche
+    const fotosBereit = (page) =>
+        page.evaluate(() => Promise.all([...document.images].filter((img) => img.loading !== "lazy").map((img) => img.decode().catch(() => {}))));
     // Läuft im Browser: hat das Feuerwerk etwas auf seine Leinwand gezeichnet?
     const feuerwerkGezeichnet = () => {
         const leinwand = document.querySelector(".feuerwerk");
@@ -119,6 +122,7 @@ async function main() {
     await page.evaluate(() => document.fonts.ready);
     pruefe(/noindex/.test(await page.locator('meta[name="robots"]').getAttribute("content")), "Inhaltsseite: noindex gesetzt");
     pruefe(await page.evaluate(() => !!localStorage.getItem("dankeschoen_schluessel")), "«Auf diesem Gerät merken» gespeichert");
+    await fotosBereit(page);
     await page.screenshot({ path: bild("03-seite-oben") });
     // Fotos laden erst beim Scrollen (lazy) – für den Ganzseiten-Screenshot einmal durchscrollen
     await page.evaluate(async () => {
@@ -176,6 +180,7 @@ async function main() {
     const pagePc = await kontextPc.newPage();
     pruefe(await anmelden(pagePc), "Computer (frischer Browser): Link + Passwort öffnen die Seite");
     await pagePc.evaluate(() => document.fonts.ready);
+    await fotosBereit(pagePc);
     await pagePc.screenshot({ path: bild("07-computer") });
     await kontextPc.close();
 
